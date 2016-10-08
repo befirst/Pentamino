@@ -9,36 +9,42 @@ namespace PentaminoConsole
 {
     class Program
     {
-        static int CheckPentamino(int[,] pentamino, int[,] figure)
+        static string CheckPentamino(int[,] pentamino, int[,] figure, DancingLinks list)
         {
             int count = 0;//количество положений в котором может распологаться пентамино
-            for (int y = 0; y < figure.GetLength(0) - pentamino.GetLength(0)+1; y++)
-                for (int x = 0; x < figure.GetLength(1) - pentamino.GetLength(1)+1; x++)
-                {
-                    bool flag = true;
+            string result = "";
+            for (int y = 0; y < figure.GetLength(0) - pentamino.GetLength(0) + 1; y++)
+                for (int x = 0; x < figure.GetLength(1) - pentamino.GetLength(1) + 1; x++)
+                {                    
                     int g = 0;
+                    Row newPlace = list.AddRow();                    
+                    Dictionary<int, int> newPlaceIndexes = new Dictionary<int, int>();//использовать строку вместо словаря и потом сплитом разделить
                     //новое положение 
                     for (int i = 0; i < pentamino.GetLength(0); i++)
                         for (int j = 0; j < pentamino.GetLength(1); j++)
                         {
-                            if(pentamino[i, j] == 1 && figure[i + y, j + x] == 1)
+                            if (pentamino[i, j] == 1 && figure[i + y, j + x] == 1)
                             //поменять значения в dancinglinks, запомнить положение
                             {
-                                flag = true;
+                                newPlaceIndexes.Add(i + y, j + x);
                                 g++;
-                            }
-                            else
-                            {
-                                flag = false;                                
-                                //break;
-                            }
-
+                            }                            
                         }
-                    if (g==5)
+                    if (g == 5)
+                    {                        
+                        foreach (var i in newPlaceIndexes)
+                        {
+                            list.AddNode(newPlace, i.Key, i.Value);
+                            result += count + ": " + i.Key + ", " + i.Value + Environment.NewLine;
+                        }
+                        newPlaceIndexes.Clear();
                         count++;
+                    }
+                    else
+                        newPlaceIndexes.Clear();
                 }
 
-            return count;
+            return result;
         }
 
         static void Main(string[] args)
@@ -66,8 +72,10 @@ namespace PentaminoConsole
                     System.Console.Write(binarySource[i, j] + "");
                 }
                 System.Console.WriteLine();
-            }
-            System.Console.WriteLine(CheckPentamino(pentamino1, binarySource));
+            }            
+            DancingLinks dl = new DancingLinks(binarySource.GetLength(0), binarySource.GetLength(1));
+            System.Console.WriteLine(CheckPentamino(pentamino1, binarySource, dl));
+            System.Console.WriteLine(dl.PrintTableHeader());
             System.Console.ReadLine();
         }
     }
