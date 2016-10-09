@@ -85,7 +85,7 @@ namespace PentaminoConsole
             System.Console.WriteLine(CheckPentamino(v90Pentamino, binarySource, dl));
             System.Console.WriteLine(CheckPentamino(iPentamino, binarySource, dl));
             System.Console.WriteLine(CheckPentamino(i90Pentamino, binarySource, dl));
-
+            Pentaminos p = new Pentaminos();
             System.Console.ReadLine();
         }
     }
