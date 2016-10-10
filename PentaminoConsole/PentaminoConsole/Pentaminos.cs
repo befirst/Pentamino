@@ -8,7 +8,7 @@ namespace PentaminoConsole
 {
     class Pentaminos
     {
-        List<PentaminoType> pentaminoList = new List<PentaminoType>();
+        public List<PentaminoType> pentaminoList = new List<PentaminoType>();
         public Pentaminos()
         {
             pentaminoList.Add(new VPentamino());

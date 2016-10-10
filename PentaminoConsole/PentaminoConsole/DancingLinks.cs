@@ -11,8 +11,8 @@ namespace PentaminoConsole
     /// </summary>
     class DancingLinks
     {
-        Row rFirst, rLast, rCurrent;
-        Col cFirst, cLast, cCurrent;
+        public Row rFirst, rLast, rCurrent;
+        public Col cFirst, cLast, cCurrent;
         Node nCurrent;
         DancingLinks()
         {
@@ -40,10 +40,13 @@ namespace PentaminoConsole
                     }
                 }
         }
-        public Row AddRow()//WithNodes(int i, int j)
+        public Row AddRow(string name)//WithNodes(int i, int j)//сделать заполнение имени через конструктор
         {
             if (rFirst == null)
+            {
                 rFirst = rLast = rCurrent = new Row();
+                rFirst.name = name;
+            }
             else
             {
                 if (rFirst == rLast)
@@ -55,6 +58,7 @@ namespace PentaminoConsole
                     rLast = rCurrent = new Row(rLast);
                 }
             }
+            rLast.name = rCurrent.name = name;
             return rCurrent;
         }
         /// <summary>
@@ -71,8 +75,6 @@ namespace PentaminoConsole
             {
                 row._head = nCurrent;
                 col._head = nCurrent;
-                nCurrent._row = row;
-                nCurrent._col = col;
             }
             else
             {
@@ -81,8 +83,6 @@ namespace PentaminoConsole
                     row._head = nCurrent;
                     nCurrent._up = FindLastInCol(col);
                     nCurrent._up._down = nCurrent;
-                    nCurrent._row = row;
-                    nCurrent._col = col;
                 }
                 else
                 {
@@ -91,8 +91,6 @@ namespace PentaminoConsole
                         col._head = nCurrent;
                         nCurrent._left = FindLastInRow(row);
                         nCurrent._left._right = nCurrent;
-                        nCurrent._row = row;
-                        nCurrent._col = col;
                     }
                     else
                     {
@@ -100,11 +98,234 @@ namespace PentaminoConsole
                         nCurrent._up._down = nCurrent;
                         nCurrent._left = FindLastInRow(row);
                         nCurrent._left._right = nCurrent;
-                        nCurrent._row = row;
-                        nCurrent._col = col;
                     }
                 }
             }
+            col.length++;
+            row.length++;
+            nCurrent._row = row;
+            nCurrent._col = col;
+        }
+
+        public void RemoveRow(Row row)
+        {
+            if (row._down == null && row._up == null)
+            {
+                rFirst = rLast = null;
+            }
+            else
+            {
+                if (row == rFirst)
+                {
+                    rFirst = row._down;
+                    rFirst._up = null;
+                }
+                else
+                {
+                    if (row == rLast)
+                    {
+                        rLast = row._up;
+                        rLast._down = null;
+                    }
+                    else
+                    {
+                        row._down._up = row._up;
+                        row._up._down = row._down;
+                    }
+                }
+            }
+            row.deleted = true;
+        }
+        public void RestoreRow(Row row)
+        {
+            if (row._up == null && row._down == null)
+            {
+                rFirst = rLast = row;
+            }
+            else
+            {
+                if (row._down == null)
+                {
+                    rLast = row;
+                    row._up._down = row;
+                }
+                else
+                {
+                    if (row._up == null)
+                    {
+                        rFirst = row;
+                        row._down._up = row;
+                    }
+                    else
+                    {
+                        if (row._down == rFirst)
+                        {
+                            rFirst = row;
+                        }
+                        else
+                        {
+                            if (row._up == rLast)
+                                rLast = row;
+                        }
+                        row._down._up = row;
+                        row._up._down = row;
+                    }
+                }
+            }       
+            row.deleted = false;
+        }
+        public void RemoveCol(Col col)
+        {
+            if (col._left == null && col._right == null)
+            {
+                cFirst = cLast = null;
+            }
+            else
+            {
+                if (col == cFirst)
+                {
+                    cFirst = col._right;
+                    cFirst._left = null;
+                }
+                else
+                {
+                    if (col == cLast)
+                    {
+                        cLast = col._left;
+                        cLast._right = null;
+                    }
+                    else
+                    {
+                        col._right._left = col._left;
+                        col._left._right = col._right;
+                    }
+                }
+            }
+            col.deleted = true;
+        }
+        public void RestoreCol(Col col)
+        {
+            if (col._left == null && col._right == null)
+            {
+                cFirst = cLast = col;
+            }
+            else
+            {
+                if (col._right == null)
+                {
+                    cLast = col;
+                    col._left._right = col;
+                }
+                else
+                {
+                    if (col._left == null)
+                    {
+                        cFirst = col;
+                        col._right._left = col;
+                    }
+                    else
+                    {
+                        if (col._right == cFirst)
+                        {
+                            cFirst = col;
+                        }
+                        else
+                        {
+                            if (col._left == cLast)
+                                cLast = col;
+                        }
+                        col._right._left = col;
+                        col._left._right = col;
+                    }
+                }
+            }
+            col.deleted = false;
+        }
+
+        /// <summary>
+        /// Найти столбец с наименьшим количеством элементов, т.е. такую ячейку, которую может занимать наименьшее количество пентамино
+        /// </summary>
+        /// <returns></returns>
+        public Col FindMinCol()
+        {
+            cCurrent = cFirst;
+            int min = Int32.MaxValue;
+            Col temp = new Col();
+            while (cCurrent != null)
+            {
+                if (cCurrent.length < min && cCurrent.used == false && cCurrent.deleted == false) //&& cCurrent.length != 0)
+                {
+                    min = cCurrent.length;
+                    temp = cCurrent;
+                }
+                cCurrent = cCurrent._right;
+            }
+            //temp.used = true;
+            return temp;
+        }
+        public List<Col> FindAllColInRow(Row row)
+        {
+            List<Col> colList = new List<Col>();
+            rCurrent = row;
+            nCurrent = row._head;
+            while (nCurrent != null)
+            {
+                colList.Add(nCurrent._col);
+                nCurrent = nCurrent._right;
+            }
+            return colList;
+        }
+        public List<Row> FindAllRowInCol(Col col)
+        {
+            List<Row> rowList = new List<Row>();
+            cCurrent = col;
+            nCurrent = col._head;
+            while (nCurrent != null)
+            {
+                rowList.Add(nCurrent._row);
+                nCurrent = nCurrent._down;
+            }
+            return rowList;
+        }
+        public void RemoveColWithZero()
+        {
+            cCurrent = cFirst;
+            while (cCurrent != null)
+            {
+                if (cCurrent.length == 0)
+                    RemoveCol(cCurrent);
+                cCurrent = cCurrent._right;
+            }
+        }
+        public Row FindNotUsedRowInCol(Col col)//здесь проблема
+        {
+            Row result = new Row();
+            if (col.length == 0)
+                result = null;
+            else
+            {
+                if (col._head._row.used == true || col._head._row.deleted == true)
+                {
+                    nCurrent = col._head;
+                    while (nCurrent!=null)
+                    {
+                        if (nCurrent._row.used == false && nCurrent._row.deleted == false)
+                        {
+                            result = nCurrent._row;
+                            break;                            
+                        }
+                        nCurrent = nCurrent._down;
+                    }
+                }
+                else
+                {
+                    //col._head._row.used = true;
+                    result = col._head._row;
+                }
+            }
+            if (result.id == 0)
+                result = null;
+            return result;
         }
         private Node FindLastInCol(Col col)
         {
@@ -132,6 +353,12 @@ namespace PentaminoConsole
             }
             return needed;
         }
+        /// <summary>
+        /// Найти столбец по заданным индексам
+        /// </summary>
+        /// <param name="i"></param>
+        /// <param name="j"></param>
+        /// <returns></returns>
         private Col SearchCol(int i, int j)
         {
             cCurrent = cFirst;
@@ -155,6 +382,17 @@ namespace PentaminoConsole
             }
             return result;
         }
+        public string PrintTableLefter()
+        {
+            rCurrent = rFirst;
+            string result = "";
+            while (rCurrent != null)
+            {
+                result += "|" + rCurrent.name + ":" + rCurrent.id + "|=";
+                rCurrent = rCurrent._down;
+            }
+            return result;
+        }
 
     }
 
@@ -174,11 +412,13 @@ namespace PentaminoConsole
 
     class Row
     {
-        Row _up, _down;
+        public Row _up, _down;
         public Node _head;
-        int id;
-        string name;//название пентамино
-        int length;
+        public bool used;
+        public bool deleted;
+        public int id;
+        public string name;//название пентамино
+        public int length;
         public Row()
         {
             _up = _down = null;
@@ -186,15 +426,19 @@ namespace PentaminoConsole
             id = 0;
             name = "first";
             length = 0;
+            used = false;
+            deleted = false;
         }
         public Row(Row prev)
         {
             _up = prev;
             prev._down = this;
             _down = null;
-            id = prev.id++;
+            id = prev.id + 1;
             name = id.ToString();
             length = 0;
+            used = false;
+            deleted = false;
         }
     }
 
@@ -202,14 +446,18 @@ namespace PentaminoConsole
     {
         public Col _left, _right;
         public Node _head;
+        public bool used;
         public int x, y; //индексы элемента изображения (маски)
-        int length;
+        public int length;
+        public bool deleted;
         public Col()
         {
             _left = _right = null;
             _head = null;
             length = 0;
             x = y = 0;
+            deleted = false;
+            used = false;
         }
         public Col(int _x, int _y)
         {
@@ -218,6 +466,8 @@ namespace PentaminoConsole
             length = 0;
             x = _x;
             y = _y;
+            deleted = false;
+            used = false;
         }
         public Col(Col prev, int _x, int _y)
         {
@@ -228,6 +478,8 @@ namespace PentaminoConsole
             length = 0;
             x = _x;
             y = _y;
+            deleted = false;
+            used = false;
         }
     }
 }
