@@ -74,7 +74,7 @@ namespace PentaminoConsole
             }
             DancingLinks dl = new DancingLinks(binarySource.GetLength(0), binarySource.GetLength(1));
             //System.Console.WriteLine(CheckPentamino(vPentamino, binarySource, dl));
-            
+
             System.Console.WriteLine(dl.PrintTableHeader());//проверка добавления всех клеток
             System.Console.ReadLine();
             Pentaminos p = new Pentaminos();
@@ -95,14 +95,77 @@ namespace PentaminoConsole
             System.Console.ReadLine();
         }
 
+        static void NewX(DancingLinks list, Stack<Row> deletedRows, int[] backRows, Stack<Col> deletedCols, int[] backCols, int depth)
+        {
+            if (list.cCount == 0)
+            {
+                //записать решение
+                Console.WriteLine("Решилось!");
+                Console.ReadLine();
+                return;
+            }
+            if (list.rCount == 0)
+            {
+                Console.WriteLine("Нет!");
+                Console.ReadLine();
+                return;
+            }
+            Col chosen = list.SelectCol();
+            if (chosen.length == 0)
+            {
+                Console.WriteLine("Нет!");
+                Console.ReadLine();
+                return;
+            }
+            Node nodeFromChosen = chosen._head;
+            do
+            {
+                backRows[depth] = deletedRows.Count;
+                backCols[depth] = deletedCols.Count;
+                Node horizontal = nodeFromChosen;
+                do
+                {
+                    Node vertical = chosen._head._down;
+                    while (vertical._down != null)
+                    {
+                        list.RemoveRow(horizontal._row);/////////////////
+                        deletedRows.Push(horizontal._row);
+                        vertical = vertical._down;
+                    }
+                    deletedCols.Push(vertical._col);/////////////////
+                    horizontal = horizontal._right;
+                } while (horizontal != null);
+                list.RemoveRow(nodeFromChosen._row);
+                deletedRows.Push(nodeFromChosen._row);/////////////////
+                Col[] a = deletedCols.ToArray();
+                for (int i = backCols[depth]; i < deletedCols.Count; ++i)
+                    list.RemoveCol(a[i]);
+
+                depth++;
+
+                NewX(list, deletedRows, backRows, deletedCols, backCols, depth);
+
+                depth--;
+                while (backRows[depth] < deletedRows.Count)
+                {
+                    list.RestoreRow(deletedRows.Pop());
+                }
+                while (backCols[depth] < deletedCols.Count)
+                {
+                    list.RestoreCol(deletedCols.Pop());
+                }
+                nodeFromChosen = nodeFromChosen._down;
+            } while (nodeFromChosen != null);
+        }
+
         static List<char[,]> FindSolutions(Tree tree, DancingLinks list, Pentaminos pentaminos)
         {
             List<char[,]> solutions = new List<char[,]>();//все возможные решения
             Stack<Row> deletedRows = new Stack<Row>();//стек удаленных строк, из него восстанавливаем список
             Stack<Col> deletedCols = new Stack<Col>();//стек удаленных столбцов, из него восстанавливаем список
-            int depth = 0;//глубина в которой мы находимся
-            int[] backRows = new int[12];
-            int[] backCols = new int[12];
+            int depth = 1;//глубина в которой мы находимся
+            int[] backRows = new int[13];
+            int[] backCols = new int[13];
             list.cCurrent = list.cFirst;
             TreeNode tnCurrent = tree.root;
             //while (list.cCurrent != null)
@@ -113,88 +176,177 @@ namespace PentaminoConsole
 
             System.Console.WriteLine("Begin");
 
-            XAlgorithm(list, tnCurrent, deletedRows, backRows, deletedCols, backCols, depth);
+            //NewX(list, deletedRows, backRows, deletedCols, backCols, depth);
+            XAlgorithm2(list, tnCurrent, tree, deletedRows, backRows, deletedCols, backCols, depth);
+
+            System.Console.WriteLine("End");
+
 
             return solutions;
         }
-        static void XAlgorithm(DancingLinks list, TreeNode currentNode, Stack<Row> deletedRows, int[] backRows, Stack<Col> deletedCols, int[] backCols, int depth)
+        static void XAlgorithm2(DancingLinks list, TreeNode currentNode, Tree tree, Stack<Row> deletedRows, int[] backRows, Stack<Col> deletedCols, int[] backCols, int depth)
         {
             backRows[depth] = deletedRows.Count;
             backCols[depth] = deletedCols.Count;
-            while (list.cFirst != null)
+            if (list.cCount != 0)
             {
-                System.Console.WriteLine(depth + " :не пустой");
-                System.Console.ReadLine();
-                Col chosenCol = list.FindMinCol();//1
-                System.Console.WriteLine("первый шаг: " + chosenCol.x + ":" + chosenCol.y);
-                System.Console.ReadLine();
-                if (chosenCol.length != 0 && chosenCol!=null)
+                if (list.rCount != 0)
                 {
-                    Row chosenRow = list.FindNotUsedRowInCol(chosenCol);//2                    
-                    if (chosenRow != null)
+                    System.Console.WriteLine(depth + " :не пустой");
+                    System.Console.ReadLine();
+                    Col chosenCol = list.FindMinCol();//1
+                    System.Console.WriteLine("первый шаг: " + chosenCol.x + ":" + chosenCol.y);
+                    System.Console.ReadLine();
+                    if (chosenCol.length != 0)
                     {
-                        chosenRow.used = true;
-                        System.Console.WriteLine("второй шаг: " + chosenRow.name + ":" + chosenRow.id);
-                        System.Console.ReadLine();
-                        TreeNode temp = new TreeNode(currentNode, chosenRow.name, chosenRow.id);
-                        //currentNode.children.Add(temp);//3
-                        System.Console.WriteLine("ребенок добавлен");
-                        System.Console.ReadLine();
-                        Row iter = list.rFirst;
-                        while (iter != null)//4
+                        Row chosenRow = list.FindNotUsedRowInCol(chosenCol);//2                    
+                        if (chosenRow != null)
                         {
-                            if (iter != chosenRow && iter.name == chosenRow.name)
+                            chosenRow.used = true;
+                            System.Console.WriteLine("второй шаг: " + chosenRow.name + ":" + chosenRow.id);
+                            System.Console.ReadLine();
+                            if (currentNode != tree.root)
+                                tree.Reload(currentNode);
+                            chosenRow.used = true;
+                            TreeNode temp = new TreeNode(currentNode, chosenRow, chosenRow.name, chosenRow.id);
+                            //currentNode.children.Add(temp);//3
+                            System.Console.WriteLine("ребенок добавлен");
+                            System.Console.ReadLine();
+                            Row iter = list.rFirst;
+                            while (iter != null)//4
                             {
-                                list.RemoveRow(iter);/////////////////
-                                deletedRows.Push(iter);
-                                //backRows++;
-                                System.Console.WriteLine("удалена строка: " + iter.name + ":" + iter.id);
-                            }
-                            iter = iter._down;
-                        }
-                        System.Console.WriteLine("выполнен шаг 4, удалены все одноименные строки");
-                        System.Console.ReadLine();
-                        foreach (var x in list.FindAllColInRow(chosenRow))//5
-                        {
-                            foreach (var y in list.FindAllRowInCol(x))
-                                if (y != chosenRow && y.deleted == false)
+                                if (iter != chosenRow && iter.name == chosenRow.name)
                                 {
-                                    list.RemoveRow(y);/////////////////
-                                    deletedRows.Push(y);
+                                    list.RemoveRow(iter);/////////////////
+                                    deletedRows.Push(iter);
                                     //backRows++;
-                                    System.Console.WriteLine("удалена строка: " + y.name + ":" + y.id);
+                                    System.Console.WriteLine("удалена строка: " + iter.name + ":" + iter.id);
                                 }
-                            if (x.deleted == false)
-                            {
-                                list.RemoveCol(x);/////////////////
-                                deletedCols.Push(x);
-                                //backCols++;
-                                System.Console.WriteLine("удален столбец: " + x.x + ":" + x.y);
+                                iter = iter._down;
                             }
+                            System.Console.WriteLine("выполнен шаг 4, удалены все одноименные строки");
+                            System.Console.ReadLine();
+                            foreach (var x in list.FindAllColInRow(chosenRow))//5
+                            {
+                                foreach (var y in list.FindAllRowInCol(x))
+                                    if (y != chosenRow && y.deleted == false)
+                                    {
+                                        list.RemoveRow(y);/////////////////
+                                        deletedRows.Push(y);
+                                        //backRows++;
+                                        System.Console.WriteLine("удалена строка: " + y.name + ":" + y.id);
+                                    }
+                                if (x.deleted == false)
+                                {
+                                    list.RemoveCol(x);/////////////////
+                                    deletedCols.Push(x);
+                                    //backCols++;
+                                    System.Console.WriteLine("удален столбец: " + x.x + ":" + x.y);
+                                }
+                            }
+                            System.Console.WriteLine("выполнен шаг 5");
+                            System.Console.ReadLine();
+                            list.RemoveRow(chosenRow);//6/////////////////
+                            deletedRows.Push(chosenRow);
+                            //backRows++;
+                            System.Console.WriteLine("удалена выбранная строка");
+                            System.Console.WriteLine("подготовка к рекурсии");
+                            System.Console.ReadLine();
+                            XAlgorithm(list, temp, tree, deletedRows, backRows, deletedCols, backCols, ++depth);//7 рекурсия
+                                                                                                                ////depth--;
+                            System.Console.WriteLine("Алгоритм завершен на глубине: " + depth);
+                            System.Console.ReadLine();
+                            currentNode = currentNode.parent;
+                            depth--;
+                            while (backRows[depth] < deletedRows.Count)
+                            {
+                                System.Console.WriteLine("восстанавливается строка: " + deletedRows.Peek().name + ":" + deletedRows.Peek().id);
+                                list.RestoreRow(deletedRows.Pop());
+                                //backRows--;
+                                //System.Console.WriteLine("восстанавлен!");
+                            }
+                            while (backCols[depth] < deletedCols.Count)
+                            {
+                                System.Console.WriteLine("восстанавливается столбец: " + deletedCols.Peek().x + ":" + deletedCols.Peek().y);
+                                list.RestoreCol(deletedCols.Pop());
+                                //backCols--;
+                                //System.Console.WriteLine("восстанавлен!");
+                            }
+                            System.Console.WriteLine("на шаг назад");
+
+                            //System.Console.WriteLine(list.PrintTableHeader());
+                            //System.Console.WriteLine(list.PrintTableLefter());
+                            //System.Console.WriteLine(currentNode.name + ":" + currentNode.id); 
+
+                            Row iter2 = list.rFirst;
+                            while (iter != null)//4
+                            {
+                                if (iter2.name == currentNode.name)
+                                {
+                                    list.RemoveRow(iter2);/////////////////
+                                    deletedRows.Push(iter2);
+                                    //backRows++;
+                                    System.Console.WriteLine("удалена строка: " + iter2.name + ":" + iter2.id);
+                                }
+                                iter2 = iter2._down;
+                            }
+                            System.Console.WriteLine("удалены все одноименные строки");
                         }
-                        System.Console.WriteLine("выполнен шаг 5");
-                        System.Console.ReadLine();
-                        list.RemoveRow(chosenRow);//6/////////////////
-                        deletedRows.Push(chosenRow);
-                        //backRows++;
-                        System.Console.WriteLine("удалена выбранная строка");
-                        System.Console.WriteLine("подготовка к рекурсии");
-                        System.Console.ReadLine();
-                        XAlgorithm(list, temp, deletedRows, backRows, deletedCols, backCols, ++depth);//7 рекурсия
-                        depth--;
+                        else
+                        {
+                            System.Console.WriteLine("ChosenRow=0");
+                            System.Console.ReadLine();
+
+                            depth--;
+                            while (backRows[depth] < deletedRows.Count)
+                            {
+                                System.Console.WriteLine("восстанавливается строка: " + deletedRows.Peek().name + ":" + deletedRows.Peek().id);
+                                list.RestoreRow(deletedRows.Pop());
+                                //backRows--;
+                                //System.Console.WriteLine("восстанавлен!");
+                            }
+                            while (backCols[depth] < deletedCols.Count)
+                            {
+                                System.Console.WriteLine("восстанавливается столбец: " + deletedCols.Peek().x + ":" + deletedCols.Peek().y);
+                                list.RestoreCol(deletedCols.Pop());
+                                //backCols--;
+                                //System.Console.WriteLine("восстанавлен!");
+                            }
+                            System.Console.WriteLine("на шаг назад");
+                            //System.Console.WriteLine(list.PrintTableHeader());
+                            //System.Console.WriteLine(list.PrintTableLefter());
+                            //System.Console.WriteLine(currentNode.name + ":" + currentNode.id); 
+
+                            Row iter = list.rFirst;
+                            while (iter != null)//4
+                            {
+                                if (iter.name == currentNode.name)
+                                {
+                                    list.RemoveRow(iter);/////////////////
+                                    deletedRows.Push(iter);
+                                    //backRows++;
+                                    System.Console.WriteLine("удалена строка: " + iter.name + ":" + iter.id);
+                                }
+                                iter = iter._down;
+                            }
+                            System.Console.WriteLine("удалены все одноименные строки");
+                            currentNode = currentNode.parent;
+                            //System.Console.ReadLine();                        
+                        }
                     }
                     else
                     {
+
                         currentNode = currentNode.parent;
                         depth--;
-                        while (backRows[depth] != deletedRows.Count)
+                        while (backRows[depth] < deletedRows.Count)
                         {
                             System.Console.WriteLine("восстанавливается строка: " + deletedRows.Peek().name + ":" + deletedRows.Peek().id);
                             list.RestoreRow(deletedRows.Pop());
                             //backRows--;
                             //System.Console.WriteLine("восстанавлен!");
                         }
-                        while (backCols[depth] != deletedCols.Count)
+                        while (backCols[depth] < deletedCols.Count)
                         {
                             System.Console.WriteLine("восстанавливается столбец: " + deletedCols.Peek().x + ":" + deletedCols.Peek().y);
                             list.RestoreCol(deletedCols.Pop());
@@ -219,51 +371,239 @@ namespace PentaminoConsole
                             iter = iter._down;
                         }
                         System.Console.WriteLine("удалены все одноименные строки");
-                        System.Console.ReadLine();                        
+                        System.Console.ReadLine();
                     }
-                }
-                else
-                {
-                    currentNode = currentNode.parent;
-                    depth--;
-                    while (backRows[depth] != deletedRows.Count)
-                    {
-                        System.Console.WriteLine("восстанавливается строка: " + deletedRows.Peek().name + ":" + deletedRows.Peek().id);
-                        list.RestoreRow(deletedRows.Pop());
-                        //backRows--;
-                        //System.Console.WriteLine("восстанавлен!");
-                    }
-                    while (backCols[depth] != deletedCols.Count)
-                    {
-                        System.Console.WriteLine("восстанавливается столбец: " + deletedCols.Peek().x + ":" + deletedCols.Peek().y);
-                        list.RestoreCol(deletedCols.Pop());
-                        //backCols--;
-                        //System.Console.WriteLine("восстанавлен!");
-                    }
-                    System.Console.WriteLine("на шаг назад");
-                    //System.Console.WriteLine(list.PrintTableHeader());
-                    //System.Console.WriteLine(list.PrintTableLefter());
-                    System.Console.WriteLine(currentNode.name + ":" + currentNode.id);
-
-                    Row iter = list.rFirst;
-                    while (iter != null)//4
-                    {
-                        if (iter.name == currentNode.name)
-                        {
-                            list.RemoveRow(iter);/////////////////
-                            deletedRows.Push(iter);
-                            //backRows++;
-                            System.Console.WriteLine("удалена строка: " + iter.name + ":" + iter.id);
-                        }
-                        iter = iter._down;
-                    }
-                    System.Console.WriteLine("удалены все одноименные строки");
-                    System.Console.ReadLine();
+                    //return;
                 }
             }
+            else
+            {
                 System.Console.WriteLine("нужно записать решение");
+                while (currentNode.parent != null)
+                {
+                    Node n = currentNode.data._head;
+                    Console.Write(currentNode.data.name + ":" + currentNode.data.id + "| ");
+                    while (n != null)
+                    {
+                        Console.Write(n._col.x + "," + n._col.y);
+                        n = n._right;
+
+                    }
+                    Console.WriteLine();
+                    currentNode = currentNode.parent;
+                }
                 System.Console.ReadLine();
-            
+            }
+            //currentNode = currentNode.parent;//перейти к корню, собрать все имена и id и добавить их последовательность в решение
+
+        }
+        static void XAlgorithm(DancingLinks list, TreeNode currentNode, Tree tree, Stack<Row> deletedRows, int[] backRows, Stack<Col> deletedCols, int[] backCols, int depth)
+        {
+            backRows[depth] = deletedRows.Count;
+            backCols[depth] = deletedCols.Count;
+            if (list.cCount != 0)
+            {
+                if (list.rCount != 0)
+                {
+                    System.Console.WriteLine(depth + " :не пустой");
+                    //System.Console.ReadLine();
+                    Col chosenCol = list.FindMinCol();//1
+                    System.Console.WriteLine("первый шаг: " + chosenCol.x + ":" + chosenCol.y);
+                    //System.Console.ReadLine();
+                    if (chosenCol.length != 0)
+                    {
+                        Row chosenRow = list.FindNotUsedRowInCol(chosenCol);//2                    
+                        if (chosenRow != null)
+                        {
+                            chosenRow.used = true;
+                            System.Console.WriteLine("второй шаг: " + chosenRow.name + ":" + chosenRow.id);
+                            //System.Console.ReadLine();
+                            if (currentNode != tree.root)
+                                tree.Reload(currentNode);
+                            TreeNode temp = new TreeNode(currentNode, chosenRow, chosenRow.name, chosenRow.id);
+                            //currentNode.children.Add(temp);//3
+                            System.Console.WriteLine("ребенок добавлен");
+                            //System.Console.ReadLine();
+                            Row iter = list.rFirst;
+                            while (iter != null)//4
+                            {
+                                if (iter != chosenRow && iter.name == chosenRow.name)
+                                {
+                                    list.RemoveRow(iter);/////////////////
+                                    deletedRows.Push(iter);
+                                    //backRows++;
+                                    System.Console.WriteLine("удалена строка: " + iter.name + ":" + iter.id);
+                                }
+                                iter = iter._down;
+                            }
+                            System.Console.WriteLine("выполнен шаг 4, удалены все одноименные строки");
+                            //System.Console.ReadLine();
+                            foreach (var x in list.FindAllColInRow(chosenRow))//5
+                            {
+                                foreach (var y in list.FindAllRowInCol(x))
+                                    if (y != chosenRow && y.deleted == false)
+                                    {
+                                        list.RemoveRow(y);/////////////////
+                                        deletedRows.Push(y);
+                                        //backRows++;
+                                        System.Console.WriteLine("удалена строка: " + y.name + ":" + y.id);
+                                    }
+                                if (x.deleted == false)
+                                {
+                                    list.RemoveCol(x);/////////////////
+                                    deletedCols.Push(x);
+                                    //backCols++;
+                                    System.Console.WriteLine("удален столбец: " + x.x + ":" + x.y);
+                                }
+                            }
+                            System.Console.WriteLine("выполнен шаг 5");
+                            //System.Console.ReadLine();
+                            list.RemoveRow(chosenRow);//6/////////////////
+                            deletedRows.Push(chosenRow);
+                            //backRows++;
+                            System.Console.WriteLine("удалена выбранная строка");
+                            System.Console.WriteLine("подготовка к рекурсии");
+                            //System.Console.ReadLine();
+                            XAlgorithm(list, temp, tree, deletedRows, backRows, deletedCols, backCols, ++depth);//7 рекурсия
+                                                                                                                ////depth--;
+                            System.Console.WriteLine("Алгоритм завершен на глубине: " + depth);
+                            System.Console.ReadLine();
+                            currentNode = currentNode.parent;
+                            depth--;
+                            while (backRows[depth] < deletedRows.Count)
+                            {
+                                System.Console.WriteLine("восстанавливается строка: " + deletedRows.Peek().name + ":" + deletedRows.Peek().id);
+                                list.RestoreRow(deletedRows.Pop());
+                                //backRows--;
+                                //System.Console.WriteLine("восстанавлен!");
+                            }
+                            while (backCols[depth] < deletedCols.Count)
+                            {
+                                System.Console.WriteLine("восстанавливается столбец: " + deletedCols.Peek().x + ":" + deletedCols.Peek().y);
+                                list.RestoreCol(deletedCols.Pop());
+                                //backCols--;
+                                //System.Console.WriteLine("восстанавлен!");
+                            }
+                            System.Console.WriteLine("на шаг назад");
+
+                            //System.Console.WriteLine(list.PrintTableHeader());
+                            //System.Console.WriteLine(list.PrintTableLefter());
+                            //System.Console.WriteLine(currentNode.name + ":" + currentNode.id); 
+
+                            Row iter2 = list.rFirst;
+                            while (iter != null)//4
+                            {
+                                if (iter2.name == currentNode.name)
+                                {
+                                    list.RemoveRow(iter2);/////////////////
+                                    deletedRows.Push(iter2);
+                                    //backRows++;
+                                    System.Console.WriteLine("удалена строка: " + iter2.name + ":" + iter2.id);
+                                }
+                                iter2 = iter2._down;
+                            }
+                            System.Console.WriteLine("удалены все одноименные строки");
+                        }
+                        else
+                        {
+                            System.Console.WriteLine("ChosenRow=0");
+                            //System.Console.ReadLine();
+
+                            depth--;
+                            while (backRows[depth] < deletedRows.Count)
+                            {
+                                System.Console.WriteLine("восстанавливается строка: " + deletedRows.Peek().name + ":" + deletedRows.Peek().id);
+                                list.RestoreRow(deletedRows.Pop());
+                                //backRows--;
+                                //System.Console.WriteLine("восстанавлен!");
+                            }
+                            while (backCols[depth] < deletedCols.Count)
+                            {
+                                System.Console.WriteLine("восстанавливается столбец: " + deletedCols.Peek().x + ":" + deletedCols.Peek().y);
+                                list.RestoreCol(deletedCols.Pop());
+                                //backCols--;
+                                //System.Console.WriteLine("восстанавлен!");
+                            }
+                            System.Console.WriteLine("на шаг назад");
+                            //System.Console.WriteLine(list.PrintTableHeader());
+                            //System.Console.WriteLine(list.PrintTableLefter());
+                            //System.Console.WriteLine(currentNode.name + ":" + currentNode.id); 
+
+                            Row iter = list.rFirst;
+                            while (iter != null)//4
+                            {
+                                if (iter.name == currentNode.name)
+                                {
+                                    list.RemoveRow(iter);/////////////////
+                                    deletedRows.Push(iter);
+                                    //backRows++;
+                                    System.Console.WriteLine("удалена строка: " + iter.name + ":" + iter.id);
+                                }
+                                iter = iter._down;
+                            }
+                            System.Console.WriteLine("удалены все одноименные строки");
+                            currentNode = currentNode.parent;
+                            //System.Console.ReadLine();                        
+                        }
+                    }
+                    else
+                    {
+                        return;
+                        //currentNode = currentNode.parent;
+                        //depth--;
+                        //while (backRows[depth] < deletedRows.Count)
+                        //{
+                        //    System.Console.WriteLine("восстанавливается строка: " + deletedRows.Peek().name + ":" + deletedRows.Peek().id);
+                        //    list.RestoreRow(deletedRows.Pop());
+                        //    //backRows--;
+                        //    //System.Console.WriteLine("восстанавлен!");
+                        //}
+                        //while (backCols[depth] < deletedCols.Count)
+                        //{
+                        //    System.Console.WriteLine("восстанавливается столбец: " + deletedCols.Peek().x + ":" + deletedCols.Peek().y);
+                        //    list.RestoreCol(deletedCols.Pop());
+                        //    //backCols--;
+                        //    //System.Console.WriteLine("восстанавлен!");
+                        //}
+                        //System.Console.WriteLine("на шаг назад");
+                        ////System.Console.WriteLine(list.PrintTableHeader());
+                        ////System.Console.WriteLine(list.PrintTableLefter());
+                        //System.Console.WriteLine(currentNode.name + ":" + currentNode.id);
+
+                        //Row iter = list.rFirst;
+                        //while (iter != null)//4
+                        //{
+                        //    if (iter.name == currentNode.name)
+                        //    {
+                        //        list.RemoveRow(iter);/////////////////
+                        //        deletedRows.Push(iter);
+                        //        //backRows++;
+                        //        System.Console.WriteLine("удалена строка: " + iter.name + ":" + iter.id);
+                        //    }
+                        //    iter = iter._down;
+                        //}
+                        //System.Console.WriteLine("удалены все одноименные строки");
+                        //System.Console.ReadLine();
+                    }
+                    return;
+                }
+            }
+            System.Console.WriteLine("нужно записать решение");
+            while (currentNode.parent != null)
+            {
+                Node n = currentNode.data._head;
+                Console.Write(currentNode.data.name + ":" + currentNode.data.id + "| ");
+                while (n != null)
+                {
+                    Console.Write(n._col.x + "," + n._col.y);
+                    n = n._right;
+
+                }
+                Console.WriteLine();
+                currentNode = currentNode.parent;
+            }
+            System.Console.ReadLine();
+
             //currentNode = currentNode.parent;//перейти к корню, собрать все имена и id и добавить их последовательность в решение
 
         }

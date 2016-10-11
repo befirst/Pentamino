@@ -44,6 +44,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Backtracking.cs" />
+    <Compile Include="CharPentaminos.cs" />
     <Compile Include="DancingLinks.cs" />
     <Compile Include="Pentaminos.cs" />
     <Compile Include="Program.cs" />

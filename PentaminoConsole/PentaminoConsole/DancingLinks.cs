@@ -13,6 +13,7 @@ namespace PentaminoConsole
     {
         public Row rFirst, rLast, rCurrent;
         public Col cFirst, cLast, cCurrent;
+        public int cCount = 0, rCount = 0;
         Node nCurrent;
         DancingLinks()
         {
@@ -38,6 +39,7 @@ namespace PentaminoConsole
                         else
                             cLast = new Col(cLast, i, j);
                     }
+                    cCount++;
                 }
         }
         public Row AddRow(string name)//WithNodes(int i, int j)//сделать заполнение имени через конструктор
@@ -59,6 +61,7 @@ namespace PentaminoConsole
                 }
             }
             rLast.name = rCurrent.name = name;
+            rCount++;
             return rCurrent;
         }
         /// <summary>
@@ -171,7 +174,7 @@ namespace PentaminoConsole
                         row._up._down = row;
                     }
                 }
-            }       
+            }
             row.deleted = false;
         }
         public void RemoveCol(Col col)
@@ -201,6 +204,7 @@ namespace PentaminoConsole
                     }
                 }
             }
+            cCount--;
             col.deleted = true;
         }
         public void RestoreCol(Col col)
@@ -239,8 +243,9 @@ namespace PentaminoConsole
                     }
                 }
             }
+            cCount++;
             col.deleted = false;
-        }
+        } 
 
         /// <summary>
         /// Найти столбец с наименьшим количеством элементов, т.е. такую ячейку, которую может занимать наименьшее количество пентамино
@@ -256,12 +261,28 @@ namespace PentaminoConsole
                 if (cCurrent.length < min && cCurrent.used == false && cCurrent.deleted == false) //&& cCurrent.length != 0)
                 {
                     min = cCurrent.length;
-                    temp = cCurrent;
+                    temp = cCurrent;                    
                 }
                 cCurrent = cCurrent._right;
             }
             //temp.used = true;
             return temp;
+        }
+        public Col SelectCol()
+        {
+            cCurrent = cFirst;
+            int min = cCurrent.length;
+            Col temp = cCurrent._right, mc = cCurrent;
+            while (temp != null)
+            {
+                if (temp.length < min)
+                {
+                    min = temp.length;
+                    mc = temp;
+                }
+                temp = temp._right;
+            }
+            return mc;
         }
         public List<Col> FindAllColInRow(Row row)
         {
