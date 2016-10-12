@@ -25,6 +25,19 @@ namespace PentaminoConsole
             current = child.parent;
             return current;
         }
+        public string Print(TreeNode node)
+        {
+            string result = "";
+            if (node.name == "root")
+                result += "-1" + Environment.NewLine + "root";
+            else
+            {
+                result += node.parent.name + "," + node.parent.id + Environment.NewLine;
+                foreach (var i in node.parent.children)
+                    result += i.name + "," + i.id + "|";
+            }
+            return result;
+        }
         public void Reload(TreeNode start)
         {
             if (start.parent.children.Count != 0)
@@ -37,6 +50,7 @@ namespace PentaminoConsole
     {
         public string name;
         public int id;
+        int depth;
         public Row data;
         public TreeNode parent;
         public List<TreeNode> children = new List<TreeNode>();
@@ -45,6 +59,7 @@ namespace PentaminoConsole
             parent = null;
             name = "root";
             id = -1;
+            depth = 0;
         }
         public TreeNode(TreeNode _parent, Row _data, string _name, int _id)
         {
@@ -52,6 +67,7 @@ namespace PentaminoConsole
             name = _name;
             id = _id;
             data = _data;
+            depth = _parent.depth + 1;
             _parent.children.Add(this);
         }
     }

@@ -62,6 +62,12 @@ namespace PentaminoConsole
             }
             rLast.name = rCurrent.name = name;
             rCount++;
+            Node i = rCurrent._head;
+            while (i != null)
+            {
+                i._col.length++;
+                i = i._right;
+            }
             return rCurrent;
         }
         /// <summary>
@@ -118,14 +124,14 @@ namespace PentaminoConsole
             }
             else
             {
-                if (row == rFirst)
+                if (row._up == null || row == rFirst)
                 {
                     rFirst = row._down;
                     rFirst._up = null;
                 }
                 else
                 {
-                    if (row == rLast)
+                    if (row._down == null || row == rLast)
                     {
                         rLast = row._up;
                         rLast._down = null;
@@ -136,6 +142,13 @@ namespace PentaminoConsole
                         row._up._down = row._down;
                     }
                 }
+            }
+            rCount--;
+            Node i = row._head;
+            while (i != null)
+            {
+                i._col.length--;
+                i = i._right;
             }
             row.deleted = true;
         }
@@ -175,6 +188,13 @@ namespace PentaminoConsole
                     }
                 }
             }
+            //row.used = false;
+            Node i = row._head;
+            while (i != null)
+            {
+                i._col.length++;
+                i = i._right;
+            }
             row.deleted = false;
         }
         public void RemoveCol(Col col)
@@ -185,14 +205,14 @@ namespace PentaminoConsole
             }
             else
             {
-                if (col == cFirst)
+                if (col._left == null || col == cFirst)
                 {
                     cFirst = col._right;
                     cFirst._left = null;
                 }
                 else
                 {
-                    if (col == cLast)
+                    if (col._right == null || col == cLast)
                     {
                         cLast = col._left;
                         cLast._right = null;
@@ -245,7 +265,7 @@ namespace PentaminoConsole
             }
             cCount++;
             col.deleted = false;
-        } 
+        }
 
         /// <summary>
         /// Найти столбец с наименьшим количеством элементов, т.е. такую ячейку, которую может занимать наименьшее количество пентамино
@@ -261,7 +281,7 @@ namespace PentaminoConsole
                 if (cCurrent.length < min && cCurrent.used == false && cCurrent.deleted == false) //&& cCurrent.length != 0)
                 {
                     min = cCurrent.length;
-                    temp = cCurrent;                    
+                    temp = cCurrent;
                 }
                 cCurrent = cCurrent._right;
             }
@@ -320,32 +340,37 @@ namespace PentaminoConsole
         }
         public Row FindNotUsedRowInCol(Col col)//здесь проблема
         {
+            if (col.x == 7 && col.y == 12)
+            {
+            }
             Row result = new Row();
             if (col.length == 0)
                 result = null;
             else
             {
-                if (col._head._row.used == true || col._head._row.deleted == true)
+                //if (col._head._row.used == true || col._head._row.deleted == true)
+                //{
+                nCurrent = col._head;
+                while (nCurrent != null)
                 {
-                    nCurrent = col._head;
-                    while (nCurrent!=null)
+                    if (nCurrent._row.used == false && nCurrent._row.deleted == false && nCurrent._row._head._col.deleted == false)
                     {
-                        if (nCurrent._row.used == false && nCurrent._row.deleted == false)
-                        {
-                            result = nCurrent._row;
-                            break;                            
-                        }
-                        nCurrent = nCurrent._down;
+                        result = nCurrent._row;
+                        break;
                     }
+                    nCurrent = nCurrent._down;
                 }
-                else
-                {
-                    //col._head._row.used = true;
-                    result = col._head._row;
-                }
+                //}
+                //else
+                //{
+                //    //col._head._row.used = true;
+                //    result = col._head._row;
+                //}
             }
             if (result.id == 0)
                 result = null;
+            if (result != null)
+                result.used = true;
             return result;
         }
         private Node FindLastInCol(Col col)
