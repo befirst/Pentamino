@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using System.Diagnostics;
 
 namespace PentaminoConsole
 {
@@ -23,10 +24,10 @@ namespace PentaminoConsole
             {
                 while (!reader.EndOfStream)
                 {
-                    if(rowCount==0)
+                    if (rowCount == 0)
                         temp += reader.ReadLine();
                     else
-                    temp += "\n" + reader.ReadLine();
+                        temp += "\n" + reader.ReadLine();
                     rowCount++;
                 }
             }
@@ -44,6 +45,18 @@ namespace PentaminoConsole
                         resultArray[i, j] = ' ';
                 }
             return resultArray;
+        }
+        public static void CreateSolutionFile(string solutions)
+        {
+            string userName = Environment.UserName;
+            string textFileName = @"C:\Users\" + userName + @"\Desktop\solutions.out";
+            FileStream f = new FileStream(textFileName, FileMode.Create, FileAccess.Write);
+            using (StreamWriter textFile = new StreamWriter(f))
+            {
+                textFile.WriteLine(solutions);
+            }
+
+            Process.Start(@"C:\Windows\System32\notepad.exe", textFileName);
         }
     }
 }

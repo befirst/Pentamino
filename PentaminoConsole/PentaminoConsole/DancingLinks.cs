@@ -344,6 +344,7 @@ namespace PentaminoConsole
             {
             }
             Row result = new Row();
+            result.id = -1;
             if (col.length == 0)
                 result = null;
             else
@@ -367,7 +368,7 @@ namespace PentaminoConsole
                 //    result = col._head._row;
                 //}
             }
-            if (result.id == 0)
+            if (result.id == -1)
                 result = null;
             if (result != null)
                 result.used = true;

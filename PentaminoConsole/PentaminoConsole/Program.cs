@@ -51,14 +51,38 @@ namespace PentaminoConsole
 
         static void Main(string[] args)
         {
-            char[,] source;
-            System.Console.WriteLine("Please insert path to file or 0 for using default path: ");
+            char[,] source = null;
+            System.Console.WriteLine("Please insert path to file or 0 for using default files: ");
             string path = System.Console.ReadLine();
-            //сделать выполнение для каждого файла в базовой директории
             if (path == "0")
-                source = SourceReader.GetSource("1.in");
+                for (int n = 1; n < 10; n++)
+                {
+                    try
+                    {
+                        if (n!= 2) {
+                                source = SourceReader.GetSource(n + ".in");
+                                start(source); }
+                    }
+                    catch (Exception e) { Console.WriteLine(e.Message); }
+                    
+                }
             else
-                source = SourceReader.GetSource(path);
+            {
+                try
+                {
+                    source = SourceReader.GetSource(path);
+                    start(source);
+                }
+                catch (Exception e) { Console.WriteLine(e.Message); }
+                
+            }
+            Console.ReadLine();
+
+        }
+
+        static void start(char[,] source)
+        {
+            Console.WriteLine("Фигура:");
             int[,] binarySource = new int[source.GetLength(0), source.GetLength(1)];
             for (int i = 0; i < source.GetLength(0); i++)
             {
@@ -68,33 +92,27 @@ namespace PentaminoConsole
                         binarySource[i, j] = 1;
                     else
                         binarySource[i, j] = 0;
-                    System.Console.Write(binarySource[i, j] + "");
+                    System.Console.Write(source[i, j] + "");
                 }
                 System.Console.WriteLine();
             }
+            //Console.ReadLine();
             DancingLinks dl = new DancingLinks(binarySource.GetLength(0), binarySource.GetLength(1));
-            //System.Console.WriteLine(CheckPentamino(vPentamino, binarySource, dl));
-
-            System.Console.WriteLine(dl.PrintTableHeader());//проверка добавления всех клеток
-            //System.Console.ReadLine();
             Pentaminos p = new Pentaminos();
             foreach (var x in p.pentaminoList)//добавление данных о положении пентамино
             {
-                System.Console.WriteLine(x.name);
+                //System.Console.WriteLine(x.name);
                 foreach (var y in x.data)
-                    System.Console.WriteLine(CheckPentamino(y, x.name, binarySource, dl));
+                    CheckPentamino(y, x.name, binarySource, dl);
                 //System.Console.ReadLine();
             }
             dl.RemoveColWithZero();//удалить все незаполняемые клетки
-            System.Console.WriteLine(dl.PrintTableHeader());//проверка удаления нужных клеток
-            System.Console.WriteLine(dl.PrintTableLefter());
-            System.Console.ReadLine();
             Tree tree = new Tree();//создание дерева
-            //System.Console.WriteLine(dl.FindMinCol().x + ":" + dl.FindMinCol().y + "length= " + dl.FindMinCol().length);//проверка функции нахождения столбца с минимальным количеством возможных положений
             List<TreeNode> solutions = FindSolutions(tree, dl, p, source);
+            Console.WriteLine(printSolutions(solutions, tree, source));
+            SourceReader.CreateSolutionFile(printSolutions(solutions, tree, source));
             System.Console.ReadLine();
         }
-
         static void NewX(DancingLinks list, Tree tree, Stack<Row> deletedRows, int[] backRows, Stack<Col> deletedCols, int[] backCols, int depth)
         {
             if (list.cCount == 0)
@@ -165,7 +183,25 @@ namespace PentaminoConsole
             if (depth == -1)
                 Console.WriteLine("Найдено решений: ");
         }
-
+        static string printSolutions(List<TreeNode> solutions, Tree tree, char[,] source)
+        {            
+            int x = 1;
+            string result = "Решения:" + Environment.NewLine;
+            foreach (var i in solutions)
+            {
+                TreeNode j = i;
+                while (j != tree.root)
+                {
+                    changeArray(source, j.data, true);
+                    j = j.parent;
+                }
+                result += x + ")" + Environment.NewLine;
+                result+=printArray(source);
+                result+=Environment.NewLine;
+                x++;
+            }
+            return result;
+        }
         static List<TreeNode> FindSolutions(Tree tree, DancingLinks list, Pentaminos pentaminos, char[,] source)
         {
             List<TreeNode> solutions = new List<TreeNode>();//все возможные решения
@@ -176,11 +212,6 @@ namespace PentaminoConsole
             int[] backCols = new int[1000];
             list.cCurrent = list.cFirst;
             TreeNode tnCurrent = tree.root;
-            //while (list.cCurrent != null)
-            //{
-
-            //    list.cCurrent = list.cCurrent._right;
-            //}
 
             System.Console.WriteLine("Begin");
 
@@ -188,6 +219,7 @@ namespace PentaminoConsole
             XAlgorithm2(list, solutions, source, tree, deletedRows, backRows, deletedCols, backCols, depth);
 
             System.Console.WriteLine("End");
+            Console.WriteLine("Найдено решений: " + solutions.Count);
 
 
             return solutions;
@@ -196,46 +228,28 @@ namespace PentaminoConsole
         {
             if (list.cCount == 0)
             {
-                //записать решение
-                Console.WriteLine("Решилось!");
-                Console.ReadLine();
                 solutions.Add(tree.current);
                 return tree.current.parent;
             }
             if (list.rCount == 0)
             {
-                Console.WriteLine("Не осталось строк! ");
-                //Console.ReadLine();
                 return tree.current;
             }
             Col chosen = list.FindMinCol();
-            
+
             if (chosen.length == 0 || chosen == null)
             {
-                Console.WriteLine("Нет положений пентамино для ячейки: " + chosen.x + ":" + chosen.y);
-                //Console.ReadLine();
                 return tree.current.parent;//.parent;
             }
             Node nodeFromChosen = chosen._head;
             Row chosenRow = list.FindNotUsedRowInCol(chosen);
             if (chosenRow == null)
             {
-                Console.WriteLine("Нет положений пентамино для ячейки: " + chosen.x + ":" + chosen.y);
-                //Console.ReadLine();
                 return tree.current.parent;//.parent;
             }
-            //tree.current.children.Add();
             tree.current = new TreeNode(tree.current, chosenRow, chosenRow.name, chosenRow.id);
-            
-            System.Console.WriteLine(tree.Print(tree.current)); //("мы находимся в узле: " + tree.current.id + ":" + tree.current.name);
-            //System.Console.ReadLine();
             do
             {
-                //System.Console.WriteLine("первый шаг: " + chosen.x + ":" + chosen.y);
-                //System.Console.ReadLine();
-
-                //System.Console.WriteLine("второй шаг: " + chosenRow.name + ":" + chosenRow.id);
-                //System.Console.ReadLine();
                 backRows[depth] = deletedRows.Count;
                 backCols[depth] = deletedCols.Count;
                 Node horizontal = nodeFromChosen;
@@ -258,25 +272,8 @@ namespace PentaminoConsole
                         //System.Console.WriteLine("удален столбец: " + x.x + ":" + x.y);
                     }
                 }
-
-                //do
-                //{
-                //    Node vertical = chosen._head._down;
-                //    while (vertical._down != null)
-                //    {
-                //        list.RemoveRow(horizontal._row);/////////////////
-                //        deletedRows.Push(horizontal._row);
-                //        vertical = vertical._down;
-                //    }
-                //    deletedCols.Push(vertical._col);/////////////////
-                //    horizontal = horizontal._right;
-                //} while (horizontal != null);
                 list.RemoveRow(chosenRow);
-                deletedRows.Push(chosenRow);/////////////////
-                //System.Console.WriteLine("удалена строка: " + chosenRow.name + ":" + chosenRow.id);
-                //Col[] a = deletedCols.ToArray();
-                //for (int i = backCols[depth]; i < deletedCols.Count; ++i)
-                //    list.RemoveCol(a[i]);
+                deletedRows.Push(chosenRow);/////////////////               
 
                 Row iter = list.rFirst;
                 while (iter != null)//4
@@ -290,24 +287,16 @@ namespace PentaminoConsole
                     }
                     iter = iter._down;
                 }
-                //System.Console.WriteLine("выполнен шаг 4, удалены все одноименные строки");
-                //System.Console.ReadLine();
-                Console.Clear();
-                printArray(source, chosenRow, true);
+                ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                //Console.Clear();
+                //changeArray(source, chosenRow, true);
+                //printArray(source);
 
                 depth++;
 
                 tree.current = XAlgorithm2(list, solutions, source, tree, deletedRows, backRows, deletedCols, backCols, depth);
 
                 depth--;
-                //System.Console.WriteLine("возврат:" + depth);
-                
-                if (tree.current == null)
-                {
-                }
-                Console.WriteLine(tree.Print(tree.current));
-                //tree.Print(tree.current = tree.current.parent);
-                //System.Console.ReadLine();
 
                 while (backRows[depth] < deletedRows.Count)
                 {
@@ -323,27 +312,6 @@ namespace PentaminoConsole
                     //System.Console.WriteLine("восстановлен столбец: " + temp.x + ":" + temp.y);
                     list.RestoreCol(temp);
                 }
-                //foreach (var x in list.FindAllColInRow(chosenRow))//5
-                //{
-                //    foreach (var y in list.FindAllRowInCol(x))
-                //        if (y != chosenRow && y.deleted == false)
-                //        {
-                //            list.RemoveRow(y);/////////////////
-                //            //deletedRows.Push(y);
-                //            //backRows++;
-                //            System.Console.WriteLine("удалена строка: " + y.name + ":" + y.id);
-                //        }
-                //    //if (x.deleted == false)
-                //    //{
-                //    //    list.RemoveCol(x);/////////////////
-                //    //    deletedCols.Push(x);
-                //    //    //backCols++;
-                //    //    System.Console.WriteLine("удален столбец: " + x.x + ":" + x.y);
-                //    //}
-                //}
-                
-                //System.Console.WriteLine("мы находимся в узле: " + tree.current.name + ":" + tree.current.id);
-                //System.Console.ReadLine();
                 if (tree.current != tree.root.parent)
                 {
                     if (tree.current.children.Count > 0)
@@ -354,16 +322,18 @@ namespace PentaminoConsole
                             else
                                 i.data.used = false;
                         }
-                    
                 }
-                Console.Clear();
-                printArray(source, chosenRow, false);
+
+                ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                //Console.Clear();
+                //changeArray(source, chosenRow, false);
+                //printArray(source);
+
+
                 chosenRow = list.FindNotUsedRowInCol(chosen);
                 if (chosenRow != null)
                 {
                     tree.current = new TreeNode(tree.current, chosenRow, chosenRow.name, chosenRow.id);
-                    System.Console.WriteLine(tree.Print(tree.current));
-                    //System.Console.ReadLine();
                 }
                 else
                     break;
@@ -371,7 +341,7 @@ namespace PentaminoConsole
 
             } while (chosenRow != null || nodeFromChosen != null || depth != -1);
             //tree.current = tree.current.parent;
-            if (depth == -1)
+            if (depth == 0)
                 Console.WriteLine("Найдено решений: " + solutions.Count);
             return tree.current.parent;
 
@@ -586,7 +556,7 @@ namespace PentaminoConsole
             //currentNode = currentNode.parent;//перейти к корню, собрать все имена и id и добавить их последовательность в решение
 
         }
-        static void printArray(char[,] source, Row row, bool change)
+        static void changeArray(char[,] source, Row row, bool change)
         {
             if (change)
             {
@@ -601,9 +571,9 @@ namespace PentaminoConsole
                                 source[i, j] = n._row.name[0];
                             n = n._right;
                         }
-                        System.Console.Write(source[i, j] + "");
+                        //System.Console.Write(source[i, j] + "");
                     }
-                    System.Console.WriteLine();
+                    //System.Console.WriteLine();
                 }
             }
             else
@@ -619,11 +589,22 @@ namespace PentaminoConsole
                                 source[i, j] = 'o';
                             n = n._right;
                         }
-                        System.Console.Write(source[i, j] + "");
+                        //System.Console.Write(source[i, j] + "");
                     }
-                    System.Console.WriteLine();
+                    //System.Console.WriteLine();
                 }
             }
+        }
+        static string printArray(char[,] source)
+        {
+            string result = "";
+            for (int i = 0; i < source.GetLength(0); i++)
+            {
+                for (int j = 0; j < source.GetLength(1); j++)
+                    result+=source[i, j] + "";
+                result += Environment.NewLine;
+            }
+            return result;
         }
     }
 }
